@@ -38,7 +38,7 @@
                     return false;
                 }).OrderBy(todo => todo.ID).Reverse())
                 {
-                    <li class="todo-item @(todo.Done?"todo-item--done":"")" data-ssr="true" data-todo-id="@todo.ID">
+                    <li class="todo-item @(todo.Done ? "todo-item--done" : "")" data-ssr="true" data-todo-id="@todo.ID">
                         <label class="todo-item__label">
                             <input type="checkbox" data-role="doneCheck" @(todo.Done ? "checked" : "") />
                         </label>
@@ -54,8 +54,13 @@
             </ul>
         </div>
         <p class="todo-status" id="todoStatus">
-            <span id="todoStatusText" class="todo-status__text">0 items left</span>
-            <a href="#" id="clearCompleted" class="todo-status__link todo-status__clearLink">Clear completed</a>
+            <span id="todoStatusText" class="todo-status__text">
+                @{
+                    var count = Model.Count(todo => !todo.Done);
+                }
+                @count @(count == 1 ? "item" : "items") left.
+            </span>
+            <a href="#" id="clearCompleted" class="todo-status__link todo-status__clearLink @(Model.Any(todo=>todo.Done)?"":"todo-status__clearLink--hidden")">Clear completed</a>
             <span id="hashLinks" class="todo-status__linkArea">
                 <a href="/" data-route-link="index" class="todo-status__link @((string)ViewData["route"]=="index"?"todo-status__link--current":"")">All</a>&ensp;&middot;&ensp;<a href="/Todos/Completed/" data-route-link="completed" class="todo-status__link @((string)ViewData["route"]=="completed"?"todo-status__link--current":"")">Completed</a>&ensp;&middot;&ensp;<a href="/Todos/Remaining/" data-route-link="remaining" class="todo-status__link @((string)ViewData["route"]=="remaining"?"todo-status__link--current":"")">Remaining</a>
             </span>
