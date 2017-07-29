@@ -1,5 +1,5 @@
 # TodoServer
-Your good old TodoMVC is now rendered server-side.
+Your good old TodoMVC is now rendered server-side too.
 
 ## Screenshot
 ![image](https://user-images.githubusercontent.com/8168391/28742673-db2ae404-7468-11e7-8bbc-6feba249fd4d.png)
