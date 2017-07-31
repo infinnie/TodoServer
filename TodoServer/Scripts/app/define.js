@@ -30,9 +30,6 @@ var define = (function ($) {
                         s.onreadystatechange = function () {
                             if (/loaded|complete/.test(s.readyState)) {
                                 d.resolve(storage[key]);
-                                setTimeout(function () {
-                                    s = null;
-                                }, 0);
                             }
                         }
                     }

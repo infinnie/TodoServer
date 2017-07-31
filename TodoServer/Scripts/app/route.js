@@ -100,6 +100,25 @@ define("app/route", ["jquery"], function ($) {
             return Navigation.getRouteOf(url) !== null;
         }, currentRoute: function () {
             return Navigation.getRouteOf(location.href);
+        }, getRouteParams: function (url) {
+            var k, re, arr = null;
+            url = url.replace(hostre, "");
+            for (k in navRoutes.regexps) {
+                re = navRoutes.regexps[k];
+                if (re.test(url)) {
+                    url.replace(re, function () {
+                        arr = [].slice.call(arguments, 0);
+                    });
+                    return {
+                        routeName: k,
+                        routeParams: arr
+                    };
+                }
+            }
+            return {
+                routeName: null,
+                routeParams: null
+            };
         }
     };
 

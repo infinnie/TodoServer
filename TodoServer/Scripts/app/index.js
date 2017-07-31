@@ -127,15 +127,14 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                 return [].concat.apply([], arguments);
             });
         };
-    })(AppStorage), routeTest = function (done, url) {
+    })(AppStorage), routeTest = function (done, filter) {
         /// <param name="done" type="Boolean"/>
-        var cur = Route.getRouteOf(url || location.href);
         if (done) {
-            return /^(?:index|completed)$/.test(cur);
+            return /^(?:all|completed)$/.test(filter);
         }
-        return /^(?:index|remaining)$/.test(cur);
-    }, modelTransformation = (function () {
-        var list = [];
+        return /^(?:all|remaining)$/.test(filter);
+    }, modelTransformation = (function (model) {
+        var list = [], curFilter;
         return function (updates) {
             /// <summary>Update model and computed properties.</summary>
             /// <param name="updates" type="Array"/>
@@ -144,13 +143,24 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                     action: "update",
                     type: "counter"
                 }, should = false, hasRouteUpdate = false, retUpdates = [],
-                creations = [], updateList = {}, deletions = {}, cancelList = {}, curUrl;
+                creations = [], updateList = {}, deletions = {}, cancelList = {};
             $.each(updates, function (index, item) {
+                var routeObj;
                 if (item.action === "fill" && item.type === "todoList") {
                     list = item.value;
+                    routeObj = Route.getRouteParams(location.href);
+                    if (routeObj) {
+                        if (routeObj.routeName === "index") {
+                            curFilter = "all";
+                        } else {
+                            curFilter = (routeObj.routeParams[1] || "").toLowerCase();
+                        }
+                    }
                     if (!item.ssr) {
-                        hasRouteUpdate = true;
-                        curUrl = location.href;
+                        // do something
+                        if (curFilter) {
+                            hasRouteUpdate = true;
+                        }
                     }
                     return false;
                 }
@@ -178,13 +188,13 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                 retUpdates.push(update);
                 if (update.action === "update" && update.type === "route") {
                     hasRouteUpdate = true;
-                    curUrl = update.url;
+                    curFilter = update.filter.toLowerCase();
                 }
             });
             list = [].concat.apply([], $.map(list, function (todo) {
                 var curUpdate, ret;
                 if (todo.id in deletions) {
-                    if (routeTest(todo.done)) {
+                    if (routeTest(todo.done, curFilter)) {
                         retUpdates.push(deletions[todo.id]);
                     }
                     return [];
@@ -192,8 +202,8 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                 if (todo.id in updateList) {
                     curUpdate = updateList[todo.id];
                     ret = $.extend({}, todo, curUpdate.value);
-                    if (routeTest(todo.done)) {
-                        if (!("done" in curUpdate.value) || routeTest(curUpdate.value.done)) {
+                    if (routeTest(todo.done, curFilter)) {
+                        if (!("done" in curUpdate.value) || routeTest(curUpdate.value.done, curFilter)) {
                             retUpdates.push(curUpdate);
                         } else {
                             retUpdates.push({
@@ -203,7 +213,7 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                             });
                         }
                     } else {
-                        if (("done" in curUpdate.value) && routeTest(curUpdate.value.done)) {
+                        if (("done" in curUpdate.value) && routeTest(curUpdate.value.done, curFilter)) {
                             retUpdates.push({
                                 type: "todo",
                                 action: "viewinsert",
@@ -228,7 +238,7 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                 return todo;
             }).concat($.map(creations, function (created) {
                 var todo = created.value;
-                if (routeTest(todo.done)) {
+                if (routeTest(todo.done, curFilter)) {
                     retUpdates.push(created);
                 }
                 return todo;
@@ -239,7 +249,7 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                     type: "todoList",
                     action: "viewfill",
                     value: $.grep(list, function (item, index) {
-                        return routeTest(item.done, curUrl);
+                        return routeTest(item.done, curFilter);
                     })
                 });
             }
@@ -253,24 +263,24 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                 action: "update",
                 value: count > 0 && (remainCount === 0)
             });
-            if (count !== AppModel.count) {
-                AppModel.count = count;
+            if (count !== model.count) {
+                model.count = count;
                 should = true;
                 ret.count = count;
             }
-            if (remainCount !== AppModel.remainCount) {
-                AppModel.remainCount = remainCount;
+            if (remainCount !== model.remainCount) {
+                model.remainCount = remainCount;
                 should = true;
                 ret.remainCount = remainCount;
             }
-            if (doneCount !== AppModel.doneCount) {
-                AppModel.doneCount = doneCount;
+            if (doneCount !== model.doneCount) {
+                model.doneCount = doneCount;
                 should = true;
                 ret.doneCount = doneCount;
             }
             return should ? retUpdates.concat(ret) : retUpdates;
         };
-    })(), viewElements = {
+    })(AppModel), viewElements = {
         todoForm: $("#todoForm"),
         todoItemTemplate: $($("#todoItemSource").html()),
         listArea: $("#listArea"),
@@ -366,7 +376,7 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                 }
             }, route: {
                 update: function (update) {
-                    var match = Route.getRouteOf(update.url || location.href);
+                    var match = update.filter.toLowerCase();
                     viewElements.linkArea.find("[data-route-link]").each(function (i, el) {
                         $(this)[$(this).attr("data-route-link") === match ? "addClass" : "removeClass"]("todo-status__link--current");
                     });
@@ -389,10 +399,6 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
     }, routeAction = {
         type: "route",
         action: "update"
-    }, routeActionFunc = function (url) {
-        performTransformations([$.extend({}, routeAction, {
-            url: url
-        })]);
     }, performTransformations = function (transformations) {
         return combineTransformations([
             storageTransformation,
@@ -405,9 +411,16 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
         });
     };
 
-    Route.register("index", /^\/(?:Todos(?:\/Index\/?)?)?(?:[?#].*)?$/i, routeActionFunc);
-    Route.register("completed", /^\/Todos\/Completed/i, routeActionFunc);
-    Route.register("remaining", /^\/Todos\/Remaining/i, routeActionFunc);
+    Route.register("index", /^\/(?:Todos(?:\/(?:Index\/?)?)?)?(?:[?#].*)?$/i, function () {
+        performTransformations([$.extend({}, routeAction, {
+            filter: "all"
+        })]);
+    });
+    Route.register("filter", /^\/Todos\/(Completed|Remaining)/i, function (url, state, _, filter) {
+        performTransformations([$.extend({}, routeAction, {
+            filter: filter
+        })]);
+    });
 
     $(function () {
         viewElements.todoForm.on("submit", function () {

@@ -62,7 +62,7 @@
             </span>
             <a href="#" id="clearCompleted" class="todo-status__link todo-status__clearLink @(count>remain?"":"todo-status__clearLink--hidden")">Clear completed</a>
             <span id="hashLinks" class="todo-status__linkArea">
-                <a href="/" data-route-link="index" class="todo-status__link @((string)ViewData["route"]=="index"?"todo-status__link--current":"")">All</a>&ensp;&middot;&ensp;<a href="/Todos/Completed/" data-route-link="completed" class="todo-status__link @((string)ViewData["route"]=="completed"?"todo-status__link--current":"")">Completed</a>&ensp;&middot;&ensp;<a href="/Todos/Remaining/" data-route-link="remaining" class="todo-status__link @((string)ViewData["route"]=="remaining"?"todo-status__link--current":"")">Remaining</a>
+                <a href="/" data-route-link="all" class="todo-status__link @((string)ViewData["route"]=="index"?"todo-status__link--current":"")">All</a>&ensp;&middot;&ensp;<a href="/Todos/Completed/" data-route-link="completed" class="todo-status__link @((string)ViewData["route"]=="completed"?"todo-status__link--current":"")">Completed</a>&ensp;&middot;&ensp;<a href="/Todos/Remaining/" data-route-link="remaining" class="todo-status__link @((string)ViewData["route"]=="remaining"?"todo-status__link--current":"")">Remaining</a>
             </span>
         </p>
     </div>
@@ -82,8 +82,10 @@
         </li>
     </script>
     <div class="toast toast--hidden" data-toast="toast">
-        <a href="#" data-toast="close" class="toast__closeBtn"></a>
-        <p class="toast__content" data-toast="content">I am a toast!</p>
+        <div class="toast__inner">
+            <a href="#" data-toast="close" class="toast__closeBtn"></a>
+            <p class="toast__content" data-toast="content">I am a toast!</p>
+        </div>
     </div>
     <script type="application/json" id="initJSON">
         @Html.Raw(JArray.FromObject(Model).ToString(Formatting.None))
