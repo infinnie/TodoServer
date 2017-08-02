@@ -85,7 +85,7 @@ namespace TodoServer.Controllers
         public async Task<ActionResult> MarkAll(bool done)
         {
             var todos = await _dbContext.TodoItems.Where(todo => todo.Done != done).ToListAsync();
-            todos.ForEach(todo => todo.Done = done);
+            todos.ForEach(todo => { todo.Done = done; todo.LastModified = DateTime.Now; });
             await _dbContext.SaveChangesAsync();
             return Json(todos.Select(t => t.ID));
         }
