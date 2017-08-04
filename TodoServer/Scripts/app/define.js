@@ -31,7 +31,7 @@ var define = (function ($) {
                             if (/loaded|complete/.test(s.readyState)) {
                                 d.resolve(storage[key]);
                             }
-                        }
+                        };
                     }
                     try {
                         $("head")[0].appendChild(s);
@@ -92,18 +92,16 @@ var define = (function ($) {
                     return storage[x];
                 }
                 throw new Error("Module not found :(");
-            }
+            };
         }), resolveDep)).then(function () {
             storage[name] = cb.apply(null, arguments);
         });
     };
 
     define.amd = {};
-    /**
-     * @param {[String]}deps
-     * @param {Function}cb
-     */
     define.require = function (deps, cb) {
+        /// <param name="deps" type="String"/>
+        /// <param name="cb" type="Function"/>
         $.when.apply($, $.map(deps, resolveDep)).then(function () {
             cb.apply(null, arguments);
         });
@@ -114,22 +112,18 @@ var define = (function ($) {
             d.resolve([].slice.call(arguments));
         });
         return d.promise();
-    }
+    };
 
-    /**
-     * @param {Object}obj
-     */
     define.config = function (obj) {
+        /// <param name="obj" type="Object"/>
         if ("root" in obj) {
             rootPath = obj.root;
         }
     };
 
-    /**
-     * @param {String}name
-     * @param {String}url
-     */
     define.mapModule = function (name, url) {
+        /// <param name="name" type="String"/>
+        /// <param name="url" type="String"/>
         var i;
         if (!name) { return nameMap; }
         if (name === "require") { return false; }

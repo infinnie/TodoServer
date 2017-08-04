@@ -107,7 +107,7 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                         action: "update",
                         id: id,
                         value: { done: item.value }
-                    }
+                    };
                 });
             });
         }

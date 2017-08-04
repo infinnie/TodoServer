@@ -13,7 +13,7 @@ define("app/appstorage", ["jquery"], function ($) {
         return function (arr) {
             /// <param name="arr" type="Array"/>
             return $.map(arr, f);
-        }
+        };
     };
     return {
         read: function () {
