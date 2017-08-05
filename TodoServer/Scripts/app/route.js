@@ -21,7 +21,7 @@ define("app/route", ["jquery"], function ($) {
             return {
                 count: Navigation.state.count + 1,
                 url: url || location.href
-            }
+            };
         }, register: function (routeName, pattern, parser) {
             /// <param name="pattern" type="RegExp"/>
             if (typeof pattern === "string") {
@@ -101,23 +101,17 @@ define("app/route", ["jquery"], function ($) {
         }, currentRoute: function () {
             return Navigation.getRouteOf(location.href);
         }, getRouteParams: function (url) {
-            var k, re, arr = null;
             url = url.replace(hostre, "");
-            for (k in navRoutes.regexps) {
-                re = navRoutes.regexps[k];
-                if (re.test(url)) {
-                    url.replace(re, function () {
-                        arr = [].slice.call(arguments, 0);
-                    });
-                    return {
-                        routeName: k,
-                        routeParams: arr
-                    };
-                }
+            var k = Navigation.getRouteOf(url), re = k && navRoutes.regexps[k], arr = null;
+            if (k === null) {
+                return null;
             }
+            url.replace(re, function () {
+                arr = [].slice.call(arguments, 0);
+            });
             return {
-                routeName: null,
-                routeParams: null
+                routeName: k,
+                routeParams: arr
             };
         }
     };
