@@ -412,12 +412,12 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
     };
 
     Route.register("index", /^\/(?:Todos(?:\/(?:Index\/?)?)?)?(?:[?#].*)?$/i, function () {
-        performTransformations([$.extend({}, routeAction, {
+        return performTransformations([$.extend({}, routeAction, {
             filter: "all"
         })]);
     });
     Route.register("filter", /^\/Todos\/(Completed|Remaining)/i, function (url, state, _, filter) {
-        performTransformations([$.extend({}, routeAction, {
+        return performTransformations([$.extend({}, routeAction, {
             filter: filter
         })]);
     });
@@ -550,11 +550,7 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
 
         if ("pushState" in history) {
             viewElements.linkArea.on("click", "a", function (e) {
-                var href = $(this).attr("href"), state = Route.createState(href);
-                Route.navigate(href, state).then(function () {
-                    Route.state = state;
-                    history.pushState(state, null, href);
-                });
+                Route.navigateTo($(this).attr("href"));
                 return false;
             });
         }

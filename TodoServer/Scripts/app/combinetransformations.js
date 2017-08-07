@@ -10,7 +10,9 @@ define("app/combinetransformations", ["jquery"], function ($) {
         };
     }, idTransformation = function (x) {
         var d = $.Deferred();
-        d.resolve(x);
+        setTimeout(function () {
+            d.resolve(x);
+        }, 0);
         return d.promise();
     };
     return function (transformations) {

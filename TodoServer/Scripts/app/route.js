@@ -33,7 +33,7 @@ define("app/route", ["jquery"], function ($) {
             /// <param name="f" type="Function"/>
             if (blocker.isBlocked) { return; }
             window.onbeforeunload = function () {
-                return "Are you sure that you want to leave";
+                return "Are you sure that you want to leave?";
             };
             blocker.url = location.href.replace(hostre, "");
             blocker.isBlocked = true;
@@ -113,11 +113,17 @@ define("app/route", ["jquery"], function ($) {
                 routeName: k,
                 routeParams: arr
             };
+        }, navigateTo: function (url) {
+            var state = Navigation.createState(url);
+            return Navigation.navigate(url, state).then(function () {
+                Navigation.state = state;
+                history.pushState(state, null, url);
+            });
         }
     };
 
     $(window).on("popstate", function (e) {
-        var orig = e.originalEvent, state, href;
+        var orig = e.originalEvent, state, href, prevState;
         if (!orig) { return; }
         state = orig.state;
         href = location.href;
@@ -133,15 +139,18 @@ define("app/route", ["jquery"], function ($) {
         if (blocker.isBlocked && blocker.url === location.href.replace(hostre, "")) {
             return;
         }
+        prevState = Navigation.state;
+        Navigation.state = state;
         Navigation.navigate(href, state).then(function () {
-            Navigation.state = state;
+            // success.
         }, function (should) {
             if (should) {
                 location.reload();
                 return;
             }
             if (blocker.isBlocked) {
-                history.go(Navigation.state.count - state.count);
+                Navigation.state = prevState;
+                history.go(prevState.count - state.count);
             }
         });
     });
