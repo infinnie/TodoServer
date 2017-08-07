@@ -140,7 +140,6 @@ define("app/route", ["jquery"], function ($) {
             return;
         }
         prevState = Navigation.state;
-        Navigation.state = state;
         Navigation.navigate(href, state).then(function () {
             // success.
         }, function (should) {
@@ -149,10 +148,13 @@ define("app/route", ["jquery"], function ($) {
                 return;
             }
             if (blocker.isBlocked) {
-                Navigation.state = prevState;
-                history.go(prevState.count - state.count);
+                setTimeout(function () {
+                    Navigation.state = prevState;
+                    history.go(prevState.count - state.count);
+                }, 0);
             }
         });
+        Navigation.state = state;
     });
 
     return Navigation;
