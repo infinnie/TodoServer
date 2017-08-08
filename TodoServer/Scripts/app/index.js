@@ -41,18 +41,29 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                 };
             });
         }, preupdate: function (item, storage) {
+            var d = $.Deferred();
             AppEvents.trigger("beforesave");
             if (item.type !== "todo") {
                 return item;
             }
-            return storage.update(item.id, item.value).then(function () {
-                return {
+            storage.update(item.id, item.value).then(function () {
+                d.resolve({
                     action: "update",
-                    value: item.value,
+                    value: $.extend({
+                        editing: false
+                    }, item.value),
                     id: item.id,
                     type: "todo"
-                };
+                });
+            }, function () {
+                AppEvents.trigger("error", "Update failed.");
+                d.resolve({
+                    type: "todo",
+                    action: "updatefail",
+                    id: item.id
+                });
             });
+            return d.promise();
         }, predestroy: function (item, storage) {
             /// <summary>returns the transformed item and list.</summary>
             AppEvents.trigger("beforesave");
@@ -181,8 +192,8 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                         case "destroy":
                             deletions[update.id] = update;
                             return;
-                        case "cancel":
-                            cancelList[update.id] = true;
+                        case "cancel": case "updatefail":
+                            cancelList[update.id] = update.action === "cancel";
                     }
                 }
                 retUpdates.push(update);
@@ -229,8 +240,9 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                         type: "todo",
                         action: "update",
                         value: {
-                            editing: false,
-                            content: todo.content
+                            editing: cancelList[todo.id] ? false : null,
+                            content: todo.content,
+                            done: todo.done
                         },
                         id: todo.id
                     });
@@ -338,7 +350,7 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                         elementUpdated[updateValue.done ? "addClass" : "removeClass"]("todo-item--done");
                         elementUpdated.find("[data-role=doneCheck]").prop("checked", updateValue.done);
                     }
-                    if ("editing" in updateValue) {
+                    if ("editing" in updateValue && updateValue.editing !== null) {
                         elementUpdated[updateValue.editing ? "addClass" : "removeClass"]("todo-item--editing");
                         if (updateValue.editing) {
                             elementUpdated.find("[data-role=todoInput]").each(function () {
@@ -406,8 +418,7 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
             viewTransformation
         ])(transformations).then(function (x) { return x; }, function (err) {
             console.log(err);
-            AppEvents.trigger("save");
-            Toast.show("An error occurred.", 8000);
+            AppEvents.trigger("error");
         });
     };
 
@@ -531,13 +542,6 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
                      value: {
                          content: inputValue
                      }
-                 }, {
-                     action: "update",
-                     type: "todo",
-                     id: todoId,
-                     value: {
-                         editing: false
-                     }
                  }
             ] : [
                     {
@@ -568,6 +572,9 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
             setTimeout(function () {
                 viewElements.indicator.removeClass("indicator--loading");
             }, 1000);
+        }).on("error", function (desc) {
+            Toast.show(desc || "Oops. Something went wrong.", 8000);
+            AppEvents.trigger("save");
         });
     });
 });
