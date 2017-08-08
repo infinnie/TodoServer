@@ -534,22 +534,18 @@ define.require(["jquery", "app/appstorage", "app/combinetransformations", "app/r
             if ($(this).data("canceled")) {
                 return;
             }
-            performTransformations(inputValue ? [
-                 {
-                     action: "preupdate",
-                     type: "todo",
-                     id: todoId,
-                     value: {
-                         content: inputValue
-                     }
-                 }
-            ] : [
-                    {
-                        action: "cancel",
-                        type: "todo",
-                        id: todoId
-                    }
-            ]);
+            performTransformations(inputValue ? [{
+                action: "preupdate",
+                type: "todo",
+                id: todoId,
+                value: {
+                    content: inputValue
+                }
+            }] : [{
+                action: "cancel",
+                type: "todo",
+                id: todoId
+            }]);
         });
 
         if ("pushState" in history) {
