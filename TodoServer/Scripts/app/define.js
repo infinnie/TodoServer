@@ -1,5 +1,4 @@
-﻿/// <reference path="/Scripts/jquery-1.12.4.js"/>
-//! (c) All rights reserved
+﻿//! (c) All rights reserved
 
 var define = (function ($) {
     "use strict";
@@ -7,6 +6,7 @@ var define = (function ($) {
         pendingList = {},
         rootPath = "/Scripts/",
         nameMap = {},
+        tempList = {},
         resolveDep = function (key) {
             var url;
             if (typeof key === "function") {
@@ -24,12 +24,26 @@ var define = (function ($) {
                     s.src = (key in nameMap) ? url : (rootPath + key + ".js");
                     if ("onload" in s) {
                         s.onload = function () {
-                            d.resolve(storage[key]);
+                            if (key in storage) {
+                                d.resolve(storage[key]);
+                            }
+                            else if (key in tempList) {
+                                tempList[key].then(function () {
+                                    d.resolve.apply(d, arguments);
+                                });
+                            }
                         };
                     } else {
                         s.onreadystatechange = function () {
                             if (/loaded|complete/.test(s.readyState)) {
-                                d.resolve(storage[key]);
+                                if (key in storage) {
+                                    d.resolve(storage[key]);
+                                }
+                                else if (key in tempList) {
+                                    tempList[key].then(function () {
+                                        d.resolve.apply(d, arguments);
+                                    });
+                                }
                             }
                         };
                     }
@@ -60,6 +74,7 @@ var define = (function ($) {
         var arr = /((.*?\/)(?:[^/]+\/)?)?[^/]+$/.exec(name),
             path = arr[1], parentPath = arr[2];
 
+        // TODO
         if ((typeof path === "string") && path) {
             deps = $.map(deps, function (dep) {
                 return dep.replace(/^\.\//, path);
@@ -67,14 +82,26 @@ var define = (function ($) {
         }
         if ((typeof parentPath === "string") && parentPath) {
             deps = $.map(deps, function (dep) {
-                return dep.replace(/^\.\.\//, parentPath);
+                /// <param name="dep" type="String"/>
+                var hasParent = /((?:\.\.\/)*?)\.\.\/(?=[^.]|$)/, cur;
+                if (hasParent.test(dep)) {
+                    cur = path.replace(/\/$/, "").split("/");
+                    while (hasParent.test(dep)) {
+                        dep = dep.replace(hasParent, function (_, $1) {
+                            cur.pop();
+                            return $1;
+                        });
+                    }
+                    return cur.join("/") + "/" + dep;
+                }
+                return dep;
             });
         }
         // do something
-        if (name in storage) {
+        if ((name in storage) || (name in tempList)) {
             return;
         }
-        $.when.apply($, $.map($.map(deps, function (dep) {
+        tempList[name] = $.when.apply($, $.map($.map(deps, function (dep) {
             if ("require" !== dep) {
                 return dep;
             }
@@ -94,16 +121,20 @@ var define = (function ($) {
                 throw new Error("Module not found :(");
             };
         }), resolveDep)).then(function () {
+            delete tempList[name];
+            delete pendingList[name];
+            console.log("Defining: " + name);
             storage[name] = cb.apply(null, arguments);
+            return storage[name];
         });
     };
 
     define.amd = {};
     define.require = function (deps, cb) {
-        /// <param name="deps" type="String"/>
+        /// <param name="deps" type="Array"/>
         /// <param name="cb" type="Function"/>
         $.when.apply($, $.map(deps, resolveDep)).then(function () {
-            cb.apply(null, arguments);
+            cb && cb.apply(null, arguments);
         });
     };
     define.requirePromise = function (deps) {
